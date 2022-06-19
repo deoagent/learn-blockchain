@@ -44,7 +44,7 @@ constructor(props){
   render() {
     return (
       <div>
-        <Navbar />
+        <Navbar account = {this.state.account}/>
         <div className="container-fluid mt-5">
           <div className="row">
             <main role="main" className="col-lg-12 d-flex text-center">
