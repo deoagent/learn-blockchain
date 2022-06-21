@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import Web3 from 'web3'
 import Navbar from './Navbar'
+import Main from './Main'
 import Token from '../abis/Token.json'
 import EthSwap from '../abis/EthSwap.json'
 import './App.css'
@@ -31,7 +32,18 @@ async loadBlockChainData(){
   } else {
     window.alert('Token contract not deployed to detected network.')
   }
+
+  //Load EthSwap
+  const ethSwapData = EthSwap.networks[networkId]
+  if(ethSwapData){
+    const ethSwap = new web3.eth.Contract(EthSwap.abi, ethSwapData.address)
+    this.setState({ethSwap})
+  } else {
+    window.alert('EthSwap contract not deployed to detected network.')
+  }
   
+  this.setState({ loading: false })
+
 }
 
 async loadWeb3(){
@@ -47,25 +59,59 @@ async loadWeb3(){
   }
 }
 
+buyTokens = (etherAmount) => {
+    this.setState({ loading: true })
+    this.state.ethSwap.methods.buyTokens().send({value: etherAmount, from: this.state.account}).on('transactionHash', (hash) => {
+      this.loadBlockChainData()
+    this.setState({ loading: false })
+      // window.location.reload(false);
+      
+  })
+}
+
+sellTokens = (tokenAmount) => {
+  this.setState({ loading: true })
+  this.state.token.methods.approve(this.state.ethSwap.address, tokenAmount).send({from: this.state.account}).on('transactionHash', (hash) => {
+  this.state.ethSwap.methods.sellTokens(tokenAmount).send({from: this.state.account}).on('transactionHash', (hash) => {
+    this.loadBlockChainData()
+  this.setState({ loading: false })
+    // window.location.reload(false);
+  })
+})
+}
+
 constructor(props){
   super(props)
   this.state = {
     accounts: '',
     token: {},
+    ethSwap: {},
     ethBalance: '0',
-    tokenBalance: '0'
+    tokenBalance: '0',
+    loading: true
   }
 }
 
   render() {
+    let content
+    if(this.state.loading){
+      content = <p id="loader" className="text-center" >Loading...</p>
+    }else{
+      content = <Main
+      ethBalance={this.state.ethBalance} 
+      tokenBalance={this.state.tokenBalance}
+      buyTokens={this.buyTokens}
+      sellTokens={this.sellTokens}
+      />
+    }
     return (
       <div>
         <Navbar account = {this.state.account}/>
         <div className="container-fluid mt-5">
           <div className="row">
-            <main role="main" className="col-lg-12 d-flex text-center">
+            <main role="main" className="col-lg-12 ml-auto mr-auto text-center" style={{maxWidth: '600px'}}>
               <div className="content mr-auto ml-auto">
-                <h1 className="App-title">Hello World!</h1>
+                {content}
               </div>
             </main>
           </div>
